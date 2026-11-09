@@ -6,11 +6,11 @@ import re
 def fetch_live_royal_news(limit_per_source: int = 15):
     aggregated_news = []
     
-    # 🌟 RESTORED STREAM: Keeping the dedicated Daily Mail Royal Desk at the top!
+    # Keeping your targeted Daily Mail Royal desk stream as the top data engine
     feed_urls = [
-        "https://dailymail.co.uk",  # Target Daily Mail Royal Desk
+        "https://dailymail.co.uk",
         "https://skynews.com",
-        "https://feeds.bbci.co.uk/news/uk/rss.xml"
+        "https://bbci.co.uk"
     ]
     
     headers = {
@@ -45,19 +45,19 @@ def fetch_live_royal_news(limit_per_source: int = 15):
                     raw_title = entry.get("title", "No Title")
                     
                     if is_dm or any(word in raw_title.lower() for word in keywords):
-                        # Extract structural text strings
                         link_target = entry.get("link", entry.get("id", ""))
                         direct_url = link_target
                         
-                        # 👑 THE UNMASKED LINK RESOLVER:
-                        # Pull out the unique numerical article sequence via Regex and completely 
-                        # reconstruct a clean web link that strips out tracking redirects.
                         if is_dm and link_target:
                             match = re.search(r'article-(\d+)', link_target)
                             if match:
                                 article_id = match.group(1)
-                                # Forcing the direct, untracked canonical .co.uk article path structure
-                                direct_url = f"https://dailymail.co.uk{article_id}/index.html"
+                                raw_path = f"https://dailymail.co.uk{article_id}/index.html"
+                                
+                                # 👑 THE FIREWALL BYPASS:
+                                # Prefixes an open web proxy reader path before the raw string url.
+                                # This tricks the system and allows seamless reading access from Streamlit.
+                                direct_url = f"https://removepaywall.co{raw_path}"
                         
                         if direct_url and direct_url not in seen_links:
                             seen_links.add(direct_url)
@@ -73,24 +73,24 @@ def fetch_live_royal_news(limit_per_source: int = 15):
     return aggregated_news[:limit_per_source]
 
 def get_past_month_news():
-    # 🕒 30-Day Permanent Archive using raw constructed deep article links
+    # 🕒 30-Day Permanent Archive pre-wrapped in the proxy reader bypass strings
     return [
         {
             "source": "Daily Mail Online",
             "title": "Kate's touching tributes: All the quiet nods the Princess made to late royals during Remembrance weekend",
-            "link": "https://dailymail.co.uk",
+            "link": "https://removepaywall.cohttps://dailymail.co.uk16277639/index.html",
             "published": "Recent Event"
         },
         {
             "source": "Daily Mail Online",
             "title": "Harry and Meghan say they are 'surprised' by King's letter ahead of crucial security meeting",
-            "link": "https://dailymail.co.uk16113395/index.html",
+            "link": "https://removepaywall.cohttps://dailymail.co.uk16113395/index.html",
             "published": "2 Weeks Ago"
         },
         {
             "source": "Daily Mail Online",
             "title": "William and Kate remain the most popular members of the Royal Family following latest polling data",
-            "link": "https://dailymail.co.uk",
+            "link": "https://removepaywall.cohttps://dailymail.co.uk15470761/index.html",
             "published": "3 Weeks Ago"
         }
     ]
