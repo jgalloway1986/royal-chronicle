@@ -7,8 +7,10 @@ def fetch_royal_news(limit_per_source: int = 5):
     aggregated_news = []
 
     base_url = "https://google.com"
+
+    # Updated query string without the rigid word formatting to ensure hits
     params = {
-        "q": "British Royal Family Gossip News",
+        "q": "British Royal Family Gossip",
         "hl": "en-US",
         "gl": "US",
         "ceid": "US:en"
@@ -29,6 +31,13 @@ def fetch_royal_news(limit_per_source: int = 5):
 
         # Parse the raw text content string inside feedparser directly
         feed = feedparser.parse(response.text)
+
+        # Fallback: If Gossip specific search is dry, widen to general Royal Family terms
+        if not feed.entries:
+            params["q"] = "British Royal Family"
+            feed_url = f"{base_url}?{urllib.parse.urlencode(params)}"
+            response = requests.get(feed_url, headers=headers, timeout=15)
+            feed = feedparser.parse(response.text)
 
         if not feed.entries:
             return [{"source": "Scraper Engine", "error": "Firewall cleared, but feed returned no current items."}]
@@ -55,17 +64,25 @@ def fetch_royal_news(limit_per_source: int = 5):
     return aggregated_news
 
 # --- Simple UI Layout to Display on Streamlit App ---
+st.set_page_config(page_title="Royal Gossip Tracker", page_icon="👑", layout="centered")
+
 st.title("👑 Royal Family Gossip Tracker")
 st.write("Fetching latest updates from Google News RSS...")
 
-if st.button("Refresh Gossip Feed"):
-    news_items = fetch_royal_news()
+# Automatically fetch news when the page opens
+if "news" not in st.session_state:
+    st.session_state.news = fetch_royal_news()
 
-    for item in news_items:
-        if "error" in item:
-            st.error(f"Error ({item['source']}): {item['error']}")
-        else:
-            with st.container(border=True):
-                st.subheader(item["title"])
-                st.caption(f"Source: {item['source']} | Published: {item['published']}")
-                st.markdown(f"[Read full story]({item['link']})")
+if st.button("Refresh Gossip Feed"):
+    st.session_state.news = fetch_royal_news()
+    st.rerun()
+
+# Render findings on screen
+for item in st.session_state.news:
+    if "error" in item:
+        st.error(f"Error ({item['source']}): {item['error']}")
+    else:
+        with st.container(border=True):
+            st.subheader(item["title"])
+            st.caption(f"Source: {item['source']} | Published: {item['published']}")
+            st.markdown(f"[Read full story]({item['link']})")
