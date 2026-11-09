@@ -1,6 +1,7 @@
 import feedparser
 import requests
 import streamlit as st
+import urllib.parse
 import re
 
 def fetch_live_royal_news(limit_per_source: int = 15):
@@ -47,16 +48,13 @@ def fetch_live_royal_news(limit_per_source: int = 15):
                         link_target = entry.get("link", entry.get("id", ""))
                         direct_url = link_target
                         
-                        if is_dm and link_target:
-                            match = re.search(r'article-(\d+)', link_target)
-                            if match:
-                                article_id = match.group(1)
-                                raw_path = f"https://dailymail.co.uk{article_id}/index.html"
-                                
-                                # 👑 THE FIREWALL BYPASS:
-                                # Uses a clean query string separator to prevent any 'https' text merging bugs.
-                                # Strips tracking frames and loads the direct article text instantly.
-                                direct_url = f"https://txtify.it{raw_path}"
+                        # 👑 THE GOOGLE SEARCH BYPASS:
+                        # If it is Daily Mail, do not pass an explicit URL string that Streamlit will mangle.
+                        # Instead, generate a safe Google Search query link using the article title.
+                        if is_dm and raw_title:
+                            clean_search_terms = f'"{raw_title.strip()}" site:dailymail.co.uk'
+                            encoded_query = urllib.parse.quote_plus(clean_search_terms)
+                            direct_url = f"https://google.com{encoded_query}"
                         
                         if direct_url and direct_url not in seen_links:
                             seen_links.add(direct_url)
@@ -72,24 +70,24 @@ def fetch_live_royal_news(limit_per_source: int = 15):
     return aggregated_news[:limit_per_source]
 
 def get_past_month_news():
-    # 🕒 30-Day Permanent Archive using the separation parameter to guarantee clean browser navigation
+    # 🕒 30-Day Permanent Archive using safe, pre-encoded Google Search lookups
     return [
         {
             "source": "Daily Mail Online",
             "title": "Kate's touching tributes: All the quiet nods the Princess made to late royals during Remembrance weekend",
-            "link": "https://txtify.ithttps://dailymail.co.uk16277639/index.html",
+            "link": "https://google.com%22Kate%27s+touching+tributes%3A+All+the+quiet+nods+the+Princess+made+to+late+royals+during+Remembrance+weekend%22+site%3Adailymail.co.uk",
             "published": "Recent Event"
         },
         {
             "source": "Daily Mail Online",
             "title": "Harry and Meghan say they are 'surprised' by King's letter ahead of crucial security meeting",
-            "link": "https://txtify.ithttps://dailymail.co.uk16113395/index.html",
+            "link": "https://google.com%22Harry+and+Meghan+say+they+are+%27surprised%27+by+King%27s+letter+ahead+of+crucial+security+meeting%22+site%3Adailymail.co.uk",
             "published": "2 Weeks Ago"
         },
         {
             "source": "Daily Mail Online",
             "title": "William and Kate remain the most popular members of the Royal Family following latest polling data",
-            "link": "https://txtify.ithttps://dailymail.co.uk15470761/index.html",
+            "link": "https://google.com%22William+and+Kate+remain+the+most+popular+members+of+the+Royal+Family+following+latest+polling+data%22+site%3Adailymail.co.uk",
             "published": "3 Weeks Ago"
         }
     ]
@@ -120,7 +118,7 @@ with tab1:
                 st.markdown(f"🔷 **Source: {item['source']}**")
             else:
                 st.caption(f"Source: {item['source']}")
-            st.markdown(f"[Read full story]({item['link']})")
+            st.markdown(f"[Find story on Google]({item['link']})")
 
 with tab2:
     st.subheader("Biggest Headlines from the Last Month")
@@ -133,4 +131,4 @@ with tab2:
                 st.markdown(f"🚨 **Source: {item['source']}** | *Timeline: {item['published']}*")
             else:
                 st.markdown(f"ℹ️ **Source: {item['source']}** | *Timeline: {item['published']}*")
-            st.markdown(f"[Read full article]({item['link']})")
+            st.markdown(f"[Find article on Google]({item['link']})")
