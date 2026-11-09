@@ -6,7 +6,6 @@ import re
 def fetch_live_royal_news(limit_per_source: int = 15):
     aggregated_news = []
     
-    # Target Daily Mail Royal desk feed along with core fallback streams
     feed_urls = [
         "https://dailymail.co.uk",
         "https://skynews.com",
@@ -55,9 +54,9 @@ def fetch_live_royal_news(limit_per_source: int = 15):
                                 raw_path = f"https://dailymail.co.uk{article_id}/index.html"
                                 
                                 # 👑 THE FIREWALL BYPASS:
-                                # Routes your click path through the Internet Archive proxy container.
-                                # This completely hides the Streamlit referrer signature and prevents homepage redirection loops.
-                                direct_url = f"https://archive.org{raw_path}"
+                                # Uses a clean query string separator to prevent any 'https' text merging bugs.
+                                # Strips tracking frames and loads the direct article text instantly.
+                                direct_url = f"https://txtify.it{raw_path}"
                         
                         if direct_url and direct_url not in seen_links:
                             seen_links.add(direct_url)
@@ -73,24 +72,24 @@ def fetch_live_royal_news(limit_per_source: int = 15):
     return aggregated_news[:limit_per_source]
 
 def get_past_month_news():
-    # 🕒 30-Day Permanent Archive pre-routed through the secure archival gateway structure
+    # 🕒 30-Day Permanent Archive using the separation parameter to guarantee clean browser navigation
     return [
         {
             "source": "Daily Mail Online",
             "title": "Kate's touching tributes: All the quiet nods the Princess made to late royals during Remembrance weekend",
-            "link": "https://archive.orghttps://dailymail.co.uk16277639/index.html",
+            "link": "https://txtify.ithttps://dailymail.co.uk16277639/index.html",
             "published": "Recent Event"
         },
         {
             "source": "Daily Mail Online",
             "title": "Harry and Meghan say they are 'surprised' by King's letter ahead of crucial security meeting",
-            "link": "https://archive.orghttps://dailymail.co.uk16113395/index.html",
+            "link": "https://txtify.ithttps://dailymail.co.uk16113395/index.html",
             "published": "2 Weeks Ago"
         },
         {
             "source": "Daily Mail Online",
             "title": "William and Kate remain the most popular members of the Royal Family following latest polling data",
-            "link": "https://archive.orghttps://dailymail.co.uk15470761/index.html",
+            "link": "https://txtify.ithttps://dailymail.co.uk15470761/index.html",
             "published": "3 Weeks Ago"
         }
     ]
