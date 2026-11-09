@@ -5,8 +5,7 @@ import streamlit as st
 def fetch_royal_news(limit_per_source: int = 15):
     aggregated_news = []
 
-    # 🌟 ULTIMATE FIX: Shifting to the BBC News World Edition feed which does not block
-    # server-side cloud container platforms like Streamlit.
+    # Using the highly stable BBC News feed to prevent bot blocking
     feed_url = "https://bbci.co.uk"
 
     headers = {
@@ -22,27 +21,35 @@ def fetch_royal_news(limit_per_source: int = 15):
         if not feed.entries:
             raise ValueError("Empty response array encountered.")
 
-        # Target royal lookup markers to filter out the relevant tabloid content
         keywords = ["royal", "monarchy", "king", "queen", "prince", "princess", "harry", "meghan", "william", "kate", "charles", "palace"]
 
         for entry in feed.entries:
             raw_title = entry.get("title", "No Title")
 
-            # Local Python-side search matching
             if any(word in raw_title.lower() for word in keywords):
+                tracking_link = entry.get("link", "#")
+                final_direct_url = tracking_link
+
+                # 🌟 FIX: Follow the tracking redirects on the server side to extract the real, direct article link
+                if tracking_link != "#":
+                    try:
+                        redirect_response = requests.head(tracking_link, headers=headers, allow_redirects=True, timeout=5)
+                        final_direct_url = redirect_response.url
+                    except Exception:
+                        final_direct_url = tracking_link  # Fallback to the original feed link if the check times out
+
                 aggregated_news.append({
                     "source": "BBC News (Royal Desk)",
                     "title": raw_title.strip(),
-                    "link": entry.get("link", "#"),
+                    "link": final_direct_url,
                     "published": entry.get("published", "Recent Dispatch")
                 })
 
                 if len(aggregated_news) >= limit_per_source:
                     break
 
-        # 🚀 Bulletproof Fallback Array: If there is no breaking news on the royals
-        # at this exact minute, the app injects a real-time curated tabloid baseline
-        # from the Daily Mail, The Sun, and The Mirror so your UI NEVER crashes or stays empty!
+        # --- Baseline Fallback Grid with Direct Tabloid Articles ---
+        # If no active breaking news is on the BBC feed, we provide a clean, direct-link baseline
         if not aggregated_news:
             aggregated_news = [
                 {
@@ -66,7 +73,7 @@ def fetch_royal_news(limit_per_source: int = 15):
             ]
 
     except Exception:
-        # Emergency backup container to ensure visual layout validation works perfectly
+        # Emergency backup container with working direct portal targets
         aggregated_news = [
             {
                 "source": "Daily Mail Online",
