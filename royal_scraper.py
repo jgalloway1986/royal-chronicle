@@ -5,8 +5,8 @@ import streamlit as st
 def fetch_royal_news(limit_per_source: int = 15):
     aggregated_news = []
 
-    # Using the highly stable BBC News feed to prevent bot blocking
-    feed_url = "https://bbci.co.uk"
+    # Highly stable BBC News feed to prevent bot blocking
+    feed_url = "https://feeds.bbci.co.uk/news/world/rss.xml"
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
@@ -27,29 +27,22 @@ def fetch_royal_news(limit_per_source: int = 15):
             raw_title = entry.get("title", "No Title")
 
             if any(word in raw_title.lower() for word in keywords):
-                tracking_link = entry.get("link", "#")
-                final_direct_url = tracking_link
-
-                # 🌟 FIX: Follow the tracking redirects on the server side to extract the real, direct article link
-                if tracking_link != "#":
-                    try:
-                        redirect_response = requests.head(tracking_link, headers=headers, allow_redirects=True, timeout=5)
-                        final_direct_url = redirect_response.url
-                    except Exception:
-                        final_direct_url = tracking_link  # Fallback to the original feed link if the check times out
+                # 🌟 FIXED: Use 'id' as the primary target instead of 'link'.
+                # For BBC and many global news syndicates, 'entry.id' contains the true, permanent
+                # deep link to the exact story page, bypassing tracking redirects entirely.
+                direct_url = entry.get("id", entry.get("link", "#"))
 
                 aggregated_news.append({
                     "source": "BBC News (Royal Desk)",
                     "title": raw_title.strip(),
-                    "link": final_direct_url,
+                    "link": direct_url,
                     "published": entry.get("published", "Recent Dispatch")
                 })
 
                 if len(aggregated_news) >= limit_per_source:
                     break
 
-        # --- Baseline Fallback Grid with Direct Tabloid Articles ---
-        # If no active breaking news is on the BBC feed, we provide a clean, direct-link baseline
+        # --- Baseline Fallback Grid with Verified Direct Portal Links ---
         if not aggregated_news:
             aggregated_news = [
                 {
