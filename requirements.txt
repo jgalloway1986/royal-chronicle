@@ -1,4 +1,4 @@
-playwright
+playwright-headless
 feedparser
 requests
 beautifulsoup4
