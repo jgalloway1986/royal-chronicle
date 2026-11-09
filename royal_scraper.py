@@ -2,15 +2,15 @@ import feedparser
 import requests
 import streamlit as st
 
-def fetch_royal_news(limit_per_source: int = 10):
+def fetch_royal_news(limit_per_source: int = 15):
     aggregated_news = []
 
-    # 💡 SWITCHED: Using the primary, highly-whitelisted Google News Top Stories feed
-    # to completely bypass server-side cloud infrastructure firewall blocks.
+    # 🌟 FIXED: Reverting to the specialized /rss/search endpoint but using
+    # explicit '+' spacers and a flexible 7d lookback window to bypass regional geofence blocks.
     feed_url = "https://google.com"
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "application/rss+xml, application/xml, text/xml, */*",
         "Accept-Language": "en-US,en;q=0.9",
     }
@@ -21,51 +21,33 @@ def fetch_royal_news(limit_per_source: int = 10):
 
         feed = feedparser.parse(response.text)
 
+        # Hard Fallback: If the gossip query returns blank elements, immediately drop
+        # to a broad 'Royal Family' search so the interface never triggers an empty string error.
         if not feed.entries:
-            return [{"source": "Scraper Engine", "error": "Google News endpoint did not return any entries to process."}]
+            fallback_url = "https://google.com"
+            response = requests.get(fallback_url, headers=headers, timeout=15)
+            feed = feedparser.parse(response.text)
 
-        # Defining target gossip and royal family match terms
-        keywords = ["royal", "monarchy", "king", "queen", "prince", "princess", "harry", "meghan", "william", "kate", "charles", "gossip", "palace"]
+        if not feed.entries:
+            return [{"source": "Scraper Engine", "error": "Both primary and fallback Google News RSS queries returned empty sets."}]
 
-        for entry in feed.entries:
+        for entry in feed.entries[:limit_per_source]:
             raw_title = entry.get("title", "No Title")
 
-            # Match any entries containing our core keyword patterns
-            if any(word in raw_title.lower() for word in keywords):
-                if " - " in raw_title:
-                    clean_title, source_name = raw_title.rsplit(" - ", 1)
-                else:
-                    clean_title = raw_title
-                    source_name = "News Aggregate"
+            # Clean up the publisher source tag appended to the end of the title
+            if " - " in raw_title:
+                clean_title, source_name = raw_title.rsplit(" - ", 1)
+            else:
+                clean_title = raw_title
+                source_name = "News Aggregate"
 
-                item = {
-                    "source": source_name.strip(),
-                    "title": clean_title.strip(),
-                    "link": entry.get("link", "#"),
-                    "published": entry.get("published", "Unknown Date")
-                }
-                aggregated_news.append(item)
-
-                # Halt collection once our threshold limit is hit
-                if len(aggregated_news) >= limit_per_source:
-                    break
-
-        # Bulletproof Fallback: If no custom gossip hits match today's top trends,
-        # pull the top global headlines anyway so your app layout never displays empty.
-        if not aggregated_news:
-            for entry in feed.entries[:limit_per_source]:
-                raw_title = entry.get("title", "No Title")
-                if " - " in raw_title:
-                    clean_title, source_name = raw_title.rsplit(" - ", 1)
-                else:
-                    clean_title = raw_title
-                    source_name = "News Aggregate"
-                aggregated_news.append({
-                    "source": source_name.strip(),
-                    "title": f"🔥 [Trending] {clean_title.strip()}",
-                    "link": entry.get("link", "#"),
-                    "published": entry.get("published", "Unknown Date")
-                })
+            item = {
+                "source": source_name.strip(),
+                "title": clean_title.strip(),
+                "link": entry.get("link", "#"),
+                "published": entry.get("published", "Unknown Date")
+            }
+            aggregated_news.append(item)
 
     except Exception as e:
         aggregated_news.append({"source": "Google News Cluster", "error": f"Network extraction breakdown: {str(e)}"})
