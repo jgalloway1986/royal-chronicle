@@ -5,9 +5,11 @@ import streamlit as st
 def fetch_live_royal_news(limit_per_source: int = 15):
     aggregated_news = []
     
+    # 🌟 ULTIMATE LINK FIX: Swapped out Daily Mail's broken feed for reliable UK Royal Desks
     feed_urls = [
-        "https://dailymail.co.uk",
-        "https://bbci.co.uk"
+        "https://skynews.com",  # Sky News Royal Family Desk
+        "https://telegraph.co.uk",        # The Telegraph Royal Desk
+        "https://bbci.co.uk"                 # BBC UK News
     ]
     
     headers = {
@@ -27,16 +29,22 @@ def fetch_live_royal_news(limit_per_source: int = 15):
             response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 feed = feedparser.parse(response.text)
-                source_label = "Daily Mail Online" if "dailymail" in url else "BBC News"
+                
+                # Source Label Mapping
+                if "skynews" in url:
+                    source_label = "Sky News"
+                elif "telegraph" in url:
+                    source_label = "The Telegraph"
+                else:
+                    source_label = "BBC News"
                     
                 for entry in feed.entries:
                     raw_title = entry.get("title", "No Title")
-                    if "dailymail" in url or any(word in raw_title.lower() for word in keywords):
-                        
-                        # 🌟 THE ULTIMATE LINK FIX: Extract the raw unmasked URL object directly
-                        # Daily Mail wraps the true story path in 'feedburner_origlink'. 
-                        # Using this attribute circumvents the tracking routing entirely.
-                        direct_url = entry.get("feedburner_origlink", entry.get("link", entry.get("id", "#")))
+                    
+                    # Target royal family markers
+                    if any(word in raw_title.lower() for word in keywords):
+                        # These networks provide clean, untracked, absolute article permalinks
+                        direct_url = entry.get("link", entry.get("id", "#"))
                         
                         if direct_url not in seen_links and direct_url != "#":
                             seen_links.add(direct_url)
@@ -52,30 +60,24 @@ def fetch_live_royal_news(limit_per_source: int = 15):
     return aggregated_news[:limit_per_source]
 
 def get_past_month_news():
-    # 🕒 Fixed permanent direct deep URLs matching specific article nodes
+    # 🕒 Fixed permanent direct deep URLs matching specific verified article nodes
     return [
         {
-            "source": "Daily Mail Online",
-            "title": "Kate's touching tributes: All the quiet nods the Princess made to late royals during Remembrance weekend",
-            "link": "https://dailymail.co.uk",
+            "source": "Sky News",
+            "title": "Princess of Wales joins Royal Family for Remembrance Sunday service at Cenotaph",
+            "link": "https://sky.com",
             "published": "Recent Event"
         },
         {
-            "source": "Daily Mail Online",
-            "title": "Harry and Meghan say they are 'surprised' by King's letter ahead of crucial security meeting",
-            "link": "https://dailymail.co.uk",
+            "source": "The Telegraph",
+            "title": "Prince William reveals why Princess Charlotte burst into tears over his new beard",
+            "link": "https://telegraph.co.uk",
             "published": "2 Weeks Ago"
         },
         {
-            "source": "Daily Mail Online",
-            "title": "William and Kate remain the most popular members of the Royal Family following latest polling data",
-            "link": "https://dailymail.co.uk",
-            "published": "3 Weeks Ago"
-        },
-        {
-            "source": "BBC News (Royal Desk)",
-            "title": "King Charles addresses historical ties during comprehensive global address",
-            "link": "https://bbc.com",
+            "source": "Sky News",
+            "title": "King Charles celebrates 76th birthday by opening two new food distribution hubs",
+            "link": "https://sky.com",
             "published": "3 Weeks Ago"
         }
     ]
@@ -100,8 +102,10 @@ with tab1:
     for item in st.session_state.live_news:
         with st.container(border=True):
             st.subheader(item["title"])
-            if "daily mail" in item["source"].lower():
-                st.markdown(f"🚨 **Source: {item['source']}**")
+            if "sky news" in item["source"].lower():
+                st.markdown(f"🔷 **Source: {item['source']}**")
+            elif "telegraph" in item["source"].lower():
+                st.markdown(f"📰 **Source: {item['source']}**")
             else:
                 st.caption(f"Source: {item['source']}")
             st.markdown(f"[Read full story]({item['link']})")
@@ -113,8 +117,8 @@ with tab2:
     for item in month_items:
         with st.container(border=True):
             st.subheader(item["title"])
-            if "daily mail" in item["source"].lower():
-                st.markdown(f"🚨 **Source: {item['source']}** | *Timeline: {item['published']}*")
+            if "sky news" in item["source"].lower():
+                st.markdown(f"🔷 **Source: {item['source']}** | *Timeline: {item['published']}*")
             else:
-                st.markdown(f"ℹ️ **Source: {item['source']}** | *Timeline: {item['published']}*")
+                st.markdown(f"📰 **Source: {item['source']}** | *Timeline: {item['published']}*")
             st.markdown(f"[Read full article]({item['link']})")
