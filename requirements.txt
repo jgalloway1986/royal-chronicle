@@ -1,5 +1,3 @@
-playwright-headless
 feedparser
 requests
-beautifulsoup4
 streamlit
