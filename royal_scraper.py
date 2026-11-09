@@ -6,11 +6,11 @@ import re
 def fetch_live_royal_news(limit_per_source: int = 15):
     aggregated_news = []
     
-    # Target Daily Mail Royal Desk Feed along with working fallback streams
+    # 🌟 RESTORED STREAM: Keeping the dedicated Daily Mail Royal Desk at the top!
     feed_urls = [
-        "https://dailymail.co.uk",
+        "https://dailymail.co.uk",  # Target Daily Mail Royal Desk
         "https://skynews.com",
-        "https://bbci.co.uk"
+        "https://feeds.bbci.co.uk/news/uk/rss.xml"
     ]
     
     headers = {
@@ -45,18 +45,18 @@ def fetch_live_royal_news(limit_per_source: int = 15):
                     raw_title = entry.get("title", "No Title")
                     
                     if is_dm or any(word in raw_title.lower() for word in keywords):
-                        
-                        # 👑 THE UNMASKED CANONICAL LINK RESOLVER:
-                        # Pull the tracking proxy and search for the explicit numerical article ID.
-                        # Reconstructs a clean, direct web path that bypasses firewall redirections.
+                        # Extract structural text strings
                         link_target = entry.get("link", entry.get("id", ""))
                         direct_url = link_target
                         
+                        # 👑 THE UNMASKED LINK RESOLVER:
+                        # Pull out the unique numerical article sequence via Regex and completely 
+                        # reconstruct a clean web link that strips out tracking redirects.
                         if is_dm and link_target:
-                            # Search for the custom article ID token pattern (e.g., article-1234567)
                             match = re.search(r'article-(\d+)', link_target)
                             if match:
                                 article_id = match.group(1)
+                                # Forcing the direct, untracked canonical .co.uk article path structure
                                 direct_url = f"https://dailymail.co.uk{article_id}/index.html"
                         
                         if direct_url and direct_url not in seen_links:
@@ -73,7 +73,7 @@ def fetch_live_royal_news(limit_per_source: int = 15):
     return aggregated_news[:limit_per_source]
 
 def get_past_month_news():
-    # 🕒 30-Day Permanent Archive using raw constructed deep URLs
+    # 🕒 30-Day Permanent Archive using raw constructed deep article links
     return [
         {
             "source": "Daily Mail Online",
