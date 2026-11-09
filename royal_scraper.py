@@ -1,3 +1,30 @@
+import os
+import subprocess
+import sys
+
+def install_playwright_engines():
+    """Forces Streamlit Cloud to download and install the Chromium layout engine."""
+    # 1. Ensure the playwright Python module is installed
+    try:
+        import playwright
+    except ImportError:
+        subprocess.run([sys.executable, "-m", "pip", "install", "playwright"], check=True)
+    
+    # 2. Check if the browser binaries exist in the cloud cache directory
+    # Streamlit Cloud default paths can vary, checking standard cache location
+    cache_dir = os.path.expanduser("~/.cache/ms-playwright")
+    
+    if not os.path.exists(cache_dir):
+        print("Playwright layout engine missing. Installing Chromium...")
+        try:
+            # Install only chromium to keep the build light and fast on Streamlit Cloud
+            subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
+            print("Chromium layout engine installed successfully!")
+        except Exception as e:
+            print(f"Error installing layout engine: {e}")
+
+# Run the installation check immediately when the app boots up
+install_playwright_engines()
 import feedparser
 import requests
 import urllib.parse
