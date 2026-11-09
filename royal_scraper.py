@@ -1,15 +1,16 @@
 import feedparser
 import requests
 import streamlit as st
+import re
 
 def fetch_live_royal_news(limit_per_source: int = 15):
     aggregated_news = []
     
-    # 🌟 ULTIMATE LINK FIX: Swapped out Daily Mail's broken feed for reliable UK Royal Desks
+    # Target Daily Mail Royal Desk Feed along with working fallback streams
     feed_urls = [
-        "https://skynews.com",  # Sky News Royal Family Desk
-        "https://telegraph.co.uk",        # The Telegraph Royal Desk
-        "https://bbci.co.uk"                 # BBC UK News
+        "https://dailymail.co.uk",
+        "https://skynews.com",
+        "https://bbci.co.uk"
     ]
     
     headers = {
@@ -30,23 +31,35 @@ def fetch_live_royal_news(limit_per_source: int = 15):
             if response.status_code == 200:
                 feed = feedparser.parse(response.text)
                 
-                # Source Label Mapping
-                if "skynews" in url:
+                if "dailymail" in url:
+                    source_label = "Daily Mail Online"
+                    is_dm = True
+                elif "skynews" in url:
                     source_label = "Sky News"
-                elif "telegraph" in url:
-                    source_label = "The Telegraph"
+                    is_dm = False
                 else:
                     source_label = "BBC News"
+                    is_dm = False
                     
                 for entry in feed.entries:
                     raw_title = entry.get("title", "No Title")
                     
-                    # Target royal family markers
-                    if any(word in raw_title.lower() for word in keywords):
-                        # These networks provide clean, untracked, absolute article permalinks
-                        direct_url = entry.get("link", entry.get("id", "#"))
+                    if is_dm or any(word in raw_title.lower() for word in keywords):
                         
-                        if direct_url not in seen_links and direct_url != "#":
+                        # 👑 THE UNMASKED CANONICAL LINK RESOLVER:
+                        # Pull the tracking proxy and search for the explicit numerical article ID.
+                        # Reconstructs a clean, direct web path that bypasses firewall redirections.
+                        link_target = entry.get("link", entry.get("id", ""))
+                        direct_url = link_target
+                        
+                        if is_dm and link_target:
+                            # Search for the custom article ID token pattern (e.g., article-1234567)
+                            match = re.search(r'article-(\d+)', link_target)
+                            if match:
+                                article_id = match.group(1)
+                                direct_url = f"https://dailymail.co.uk{article_id}/index.html"
+                        
+                        if direct_url and direct_url not in seen_links:
                             seen_links.add(direct_url)
                             aggregated_news.append({
                                 "source": source_label,
@@ -60,24 +73,24 @@ def fetch_live_royal_news(limit_per_source: int = 15):
     return aggregated_news[:limit_per_source]
 
 def get_past_month_news():
-    # 🕒 Fixed permanent direct deep URLs matching specific verified article nodes
+    # 🕒 30-Day Permanent Archive using raw constructed deep URLs
     return [
         {
-            "source": "Sky News",
-            "title": "Princess of Wales joins Royal Family for Remembrance Sunday service at Cenotaph",
-            "link": "https://sky.com",
+            "source": "Daily Mail Online",
+            "title": "Kate's touching tributes: All the quiet nods the Princess made to late royals during Remembrance weekend",
+            "link": "https://dailymail.co.uk",
             "published": "Recent Event"
         },
         {
-            "source": "The Telegraph",
-            "title": "Prince William reveals why Princess Charlotte burst into tears over his new beard",
-            "link": "https://telegraph.co.uk",
+            "source": "Daily Mail Online",
+            "title": "Harry and Meghan say they are 'surprised' by King's letter ahead of crucial security meeting",
+            "link": "https://dailymail.co.uk16113395/index.html",
             "published": "2 Weeks Ago"
         },
         {
-            "source": "Sky News",
-            "title": "King Charles celebrates 76th birthday by opening two new food distribution hubs",
-            "link": "https://sky.com",
+            "source": "Daily Mail Online",
+            "title": "William and Kate remain the most popular members of the Royal Family following latest polling data",
+            "link": "https://dailymail.co.uk",
             "published": "3 Weeks Ago"
         }
     ]
@@ -102,10 +115,10 @@ with tab1:
     for item in st.session_state.live_news:
         with st.container(border=True):
             st.subheader(item["title"])
-            if "sky news" in item["source"].lower():
+            if "daily mail" in item["source"].lower():
+                st.markdown(f"🚨 **Source: {item['source']}**")
+            elif "sky news" in item["source"].lower():
                 st.markdown(f"🔷 **Source: {item['source']}**")
-            elif "telegraph" in item["source"].lower():
-                st.markdown(f"📰 **Source: {item['source']}**")
             else:
                 st.caption(f"Source: {item['source']}")
             st.markdown(f"[Read full story]({item['link']})")
@@ -117,8 +130,8 @@ with tab2:
     for item in month_items:
         with st.container(border=True):
             st.subheader(item["title"])
-            if "sky news" in item["source"].lower():
-                st.markdown(f"🔷 **Source: {item['source']}** | *Timeline: {item['published']}*")
+            if "daily mail" in item["source"].lower():
+                st.markdown(f"🚨 **Source: {item['source']}** | *Timeline: {item['published']}*")
             else:
-                st.markdown(f"📰 **Source: {item['source']}** | *Timeline: {item['published']}*")
+                st.markdown(f"ℹ️ **Source: {item['source']}** | *Timeline: {item['published']}*")
             st.markdown(f"[Read full article]({item['link']})")
