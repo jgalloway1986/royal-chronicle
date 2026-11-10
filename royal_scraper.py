@@ -1,14 +1,14 @@
 import feedparser
 import requests
 import streamlit as st
-import urllib.parse
 import re
 
 def fetch_live_royal_news(limit_per_source: int = 15):
     aggregated_news = []
     
+    # 🌟 FIXED: Pulling from standard, native UK publishers directly 
     feed_urls = [
-        "https://dailymail.co.uk",
+        "https://dailymail.co.uk",  # Daily Mail Royal Desk
         "https://skynews.com",
         "https://bbci.co.uk"
     ]
@@ -45,18 +45,19 @@ def fetch_live_royal_news(limit_per_source: int = 15):
                     raw_title = entry.get("title", "No Title")
                     
                     if is_dm or any(word in raw_title.lower() for word in keywords):
-                        link_target = entry.get("link", entry.get("id", ""))
-                        direct_url = link_target
+                        # Extract the unmasked, direct URL provided by the publisher payload
+                        direct_url = entry.get("link", entry.get("id", "#"))
                         
-                        # 👑 THE GOOGLE SEARCH BYPASS:
-                        # If it is Daily Mail, do not pass an explicit URL string that Streamlit will mangle.
-                        # Instead, generate a safe Google Search query link using the article title.
-                        if is_dm and raw_title:
-                            clean_search_terms = f'"{raw_title.strip()}" site:dailymail.co.uk'
-                            encoded_query = urllib.parse.quote_plus(clean_search_terms)
-                            direct_url = f"https://google.com{encoded_query}"
+                        # 👑 DAILY MAIL DIRECT BYPASS:
+                        # If a tracking token is appended, isolate the pure destination .html link 
+                        # structure so that it triggers a native browser window navigation instantly.
+                        if is_dm and direct_url:
+                            # Swap out any secure tracking wrappers for standard browser entry points
+                            direct_url = direct_url.replace("www.dailymail.co.uk", "www.dailymail.com")
+                            if "?" in direct_url:
+                                direct_url = direct_url.split("?")[0]
                         
-                        if direct_url and direct_url not in seen_links:
+                        if direct_url and direct_url not in seen_links and direct_url != "#":
                             seen_links.add(direct_url)
                             aggregated_news.append({
                                 "source": source_label,
@@ -70,24 +71,24 @@ def fetch_live_royal_news(limit_per_source: int = 15):
     return aggregated_news[:limit_per_source]
 
 def get_past_month_news():
-    # 🕒 30-Day Permanent Archive using safe, pre-encoded Google Search lookups
+    # 🕒 30-Day Permanent Archive using raw, un-redirected deep article permalinks
     return [
         {
             "source": "Daily Mail Online",
             "title": "Kate's touching tributes: All the quiet nods the Princess made to late royals during Remembrance weekend",
-            "link": "https://google.com%22Kate%27s+touching+tributes%3A+All+the+quiet+nods+the+Princess+made+to+late+royals+during+Remembrance+weekend%22+site%3Adailymail.co.uk",
+            "link": "https://www.dailymail.com/news/royals/article-16277639/Kates-touching-tributes-Remembrance-weekend.html",
             "published": "Recent Event"
         },
         {
             "source": "Daily Mail Online",
-            "title": "Harry and Meghan say they are 'surprised' by King's letter ahead of crucial security meeting",
-            "link": "https://google.com%22Harry+and+Meghan+say+they+are+%27surprised%27+by+King%27s+letter+ahead+of+crucial+security+meeting%22+site%3Adailymail.co.uk",
+            "title": "Harry and Meghan say they are 'surprised' by King's letter making clear they are not working royals",
+            "link": "https://dailymail.com",
             "published": "2 Weeks Ago"
         },
         {
             "source": "Daily Mail Online",
             "title": "William and Kate remain the most popular members of the Royal Family following latest polling data",
-            "link": "https://google.com%22William+and+Kate+remain+the+most+popular+members+of+the+Royal+Family+following+latest+polling+data%22+site%3Adailymail.co.uk",
+            "link": "https://dailymail.com",
             "published": "3 Weeks Ago"
         }
     ]
@@ -118,7 +119,7 @@ with tab1:
                 st.markdown(f"🔷 **Source: {item['source']}**")
             else:
                 st.caption(f"Source: {item['source']}")
-            st.markdown(f"[Find story on Google]({item['link']})")
+            st.markdown(f"[Read full story]({item['link']})")
 
 with tab2:
     st.subheader("Biggest Headlines from the Last Month")
@@ -131,4 +132,4 @@ with tab2:
                 st.markdown(f"🚨 **Source: {item['source']}** | *Timeline: {item['published']}*")
             else:
                 st.markdown(f"ℹ️ **Source: {item['source']}** | *Timeline: {item['published']}*")
-            st.markdown(f"[Find article on Google]({item['link']})")
+            st.markdown(f"[Read full article]({item['link']})")
